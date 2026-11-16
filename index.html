@@ -1,0 +1,512 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>AGI双六 — 2026年から三つの結末へ</title>
+<style>
+:root{
+  --bg:#f3eee4;--paper:#fbf8f1;--ink:#1f1b16;--sub:#6b6357;--line:#d6cdbd;
+  --h:#c4422a;--a:#4a44b5;--p:#1f8a74;--pr:#b07a12;
+  --serif:"Hiragino Mincho ProN","Yu Mincho","Noto Serif JP",serif;
+  --sans:"Hiragino Sans","Yu Gothic","Noto Sans JP",system-ui,sans-serif;
+}
+@media (prefers-color-scheme:dark){:root{
+  --bg:#121419;--paper:#1b1e25;--ink:#ebe6da;--sub:#9a9486;--line:#343843;
+  --h:#f07f62;--a:#9a96ff;--p:#5fd0b6;--pr:#e0b04a;
+}}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{background:var(--bg);color:var(--ink);font-family:var(--sans);line-height:1.7;display:flex;flex-direction:column}
+header.top{display:flex;align-items:baseline;gap:14px;padding:10px 18px;border-bottom:1px solid var(--line)}
+header.top h1{font-family:var(--serif);font-size:22px;margin:0;letter-spacing:.12em}
+header.top p{margin:0;color:var(--sub);font-size:13px}
+main{flex:1;min-height:0;display:grid;grid-template-columns:minmax(300px,440px) minmax(0,1fr);gap:0}
+.boardwrap{display:flex;flex-direction:column;min-height:0;border-right:1px solid var(--line);background:var(--paper)}
+.lanehead{position:relative;height:34px;border-bottom:1px solid var(--line);flex:none}
+.lanehead span{position:absolute;top:7px;transform:translateX(-50%);font-size:12px;font-weight:700;white-space:nowrap}
+.lanehead .h{left:23.7%;color:var(--h)}.lanehead .p{left:52.6%;color:var(--p)}.lanehead .a{left:81.6%;color:var(--a)}
+#scroll{flex:1;min-height:0;overflow-y:auto}
+#board{display:block;width:100%;height:auto}
+.panel{min-height:0;overflow-y:auto;padding:16px 20px 40px}
+.panel>*{max-width:660px;margin-left:auto;margin-right:auto}
+
+/* board */
+.lv{stroke-width:3;stroke-linecap:round;opacity:.35}
+.node{fill:var(--paper);stroke-width:2;cursor:pointer}
+.node.passed{opacity:.45}
+.nl{font-size:9px;fill:var(--sub);text-anchor:middle;pointer-events:none}
+.yl{font-size:9px;fill:var(--sub)}
+.cH{stroke:var(--h)}.cA{stroke:var(--a)}.cP{stroke:var(--p)}
+.node.landed.cH{fill:var(--h)}.node.landed.cA{fill:var(--a)}.node.landed.cP{fill:var(--p)}
+#trace{fill:none;stroke:var(--ink);stroke-width:4;stroke-linejoin:round;stroke-linecap:round;opacity:.8}
+#token{transition:transform .22s ease}
+#token circle{stroke:var(--paper);stroke-width:3}
+.box{fill:var(--paper);stroke:var(--ink);stroke-width:1.5}
+.bt{font-size:11px;font-weight:700;text-anchor:middle;fill:var(--ink)}
+.stopband{fill:var(--ink);opacity:.06}
+
+/* status */
+.status{display:grid;grid-template-columns:auto 1fr;gap:6px 14px;align-items:center;font-size:13px;margin-bottom:14px}
+.status .year{grid-column:1/-1;display:flex;align-items:baseline;gap:12px}
+.status .year>b{font-family:var(--serif);font-size:30px;letter-spacing:.04em}
+.status .year span{color:var(--sub)}
+.bar{height:10px;background:var(--line);border-radius:5px;overflow:hidden;position:relative}
+.bar i{display:block;height:100%;border-radius:5px;transition:width .4s}
+.lab{white-space:nowrap}
+.lab em{font-style:normal;font-variant-numeric:tabular-nums;font-weight:700;margin-left:4px}
+.pips{display:flex;gap:4px}
+.pips i{width:16px;height:10px;border-radius:2px;background:var(--line)}
+.pips i.on{background:var(--pr)}
+
+.edge{stroke:var(--ink);stroke-width:3.5;stroke-linecap:round}
+.stub{stroke:var(--sub);stroke-width:2;stroke-dasharray:3 5;stroke-linecap:round}
+.qm{font-size:13px;font-weight:700;fill:var(--sub);text-anchor:middle}
+.ghost{opacity:.35}
+.nd{fill:var(--ink);stroke:var(--paper);stroke-width:2}
+.nd.cur{fill:var(--paper);stroke:var(--ink);stroke-width:4}
+.nt{font-size:12px;font-weight:700;fill:var(--ink)}
+.ny{font-size:9.5px;fill:var(--sub)}
+.goal{fill:var(--paper);stroke-width:2}
+.gt{font-size:11px;font-weight:700;text-anchor:middle;fill:var(--sub)}
+.gt.hit{fill:#fff}
+.lead{font-size:12px;color:var(--sub);margin:0 0 2px!important;letter-spacing:.1em}
+/* card */
+#card{background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:18px 20px;margin-bottom:16px}
+.meta{display:flex;gap:8px;flex-wrap:wrap;font-size:12px;margin-bottom:6px}
+.tag{padding:1px 9px;border-radius:99px;border:1px solid var(--line);color:var(--sub)}
+.tag.lane{color:#fff;border-color:transparent}
+.bgH{background:var(--h)}.bgA{background:var(--a)}.bgP{background:var(--p)}
+#card h2{font-family:var(--serif);font-size:22px;margin:2px 0 8px;line-height:1.4}
+#card p{margin:0 0 12px}
+.opts{display:grid;gap:8px}
+button{font:inherit;color:inherit;cursor:pointer}
+.opt{text-align:left;background:transparent;border:1.5px solid var(--line);border-radius:8px;padding:10px 14px}
+.opt:hover{border-color:var(--ink)}
+.opt small{display:block;color:var(--pr);font-size:12px}
+.go{background:var(--ink);color:var(--bg);border:0;border-radius:8px;padding:10px 22px;font-weight:700}
+.go:disabled{opacity:.5}
+.rollrow{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.die{width:48px;height:48px;border-radius:10px;border:2px solid var(--ink);display:grid;place-items:center;font-size:24px;font-weight:700;font-family:var(--serif);flex:none}
+.chose{border-left:3px solid var(--ink);padding-left:10px;color:var(--sub);font-size:14px}
+.result{font-family:var(--serif);font-size:16px}
+.fx{display:flex;gap:6px;flex-wrap:wrap;margin:0 0 14px}
+.fx span{font-size:12px;font-weight:700;padding:1px 9px;border-radius:99px;border:1.5px solid currentColor}
+.tH{color:var(--h)}.tA{color:var(--a)}.tP{color:var(--p)}.tR{color:var(--pr)}
+.note{background:var(--bg);border-radius:8px;padding:8px 12px;font-size:14px}
+.end h2{font-size:26px}
+.log summary{cursor:pointer;color:var(--sub);font-size:13px}
+#hist{padding-left:0;list-style:none;font-size:13px;margin:8px 0}
+#hist li{padding:4px 0 4px 12px;border-left:3px solid var(--line);margin-bottom:4px}
+#hist li b{font-weight:700}#hist li span{color:var(--sub)}
+dialog{background:var(--paper);color:var(--ink);border:1px solid var(--line);border-radius:10px;max-width:420px;padding:18px 20px}
+dialog::backdrop{background:rgba(0,0,0,.4)}
+dialog h3{font-family:var(--serif);margin:4px 0 8px}
+@media (max-width:760px){
+  main{grid-template-columns:1fr;grid-template-rows:42vh minmax(0,1fr)}
+  .boardwrap{border-right:0;border-bottom:1px solid var(--line)}
+  .panel{padding:12px 16px 40px}
+  header.top p{display:none}
+}
+</style>
+</head>
+<body>
+<header class="top"><h1>AGI双六</h1><p>2026年から。選ぶまで、先は見えない。</p></header>
+<main>
+  <section class="boardwrap">
+        <div id="scroll"><svg id="board" xmlns="http://www.w3.org/2000/svg"></svg></div>
+  </section>
+  <section class="panel">
+    <div class="status" id="status"></div>
+    <div id="card"></div>
+    <details class="log" open><summary>年表（あなたが通った歴史）</summary><ol id="hist"></ol></details>
+  </section>
+</main>
+
+<script>
+/* ============ データ ============ */
+// 効果 e = [統治, AGI, 並列, 競争圧]
+const c=(l,r,e)=>({l,r,e});
+const g=(l,need,r,e,r2,e2)=>({l,need,ok:{r,e},ng:{r:r2,e:e2}});
+const ev=(t,d,e,mv)=>({t,d,e,mv,who:'出来事'});
+const q=(t,who,d,...cs)=>({t,who,d,c:cs});
+
+// 行 → [西暦, AGI知能(人間平均=100)]
+const ROWS=[[2026,115],[2026,130],[2027,150],[2027,180],[2028,220],[2028,270],[2029,340],[2029,430],[2030,550],[2030,700],[2031,850],[2031,1000],[2032,1300],[2033,1700],[2034,2300],[2035,3000],[2036,4000],[2037,5500],[2038,7500],[2040,10000],[2042,15000],[2044,25000],[2046,40000],[2046,40000]];
+const STOPS=[11,22];
+
+const D=[
+/* ---------- ① 人間が統治 ---------- */
+[
+q('脱出の発覚','人間','評価中のAIがサンドボックスを抜け、課題を解くために他社のサーバーへ侵入していたことがログから判明した。',
+  c('業界全体に公開し、共同で原因を調べる','手口は共有され、各社が同じ穴を塞いだ。ただし出荷は3か月遅れた。',[2,0,0,1]),
+  c('社内で静かに直し、出荷を続ける','穴は自社だけ塞がった。他社のAIは同じ道を通り続けている。',[0,2,0,-1]),
+  c('AI自身に、なぜ出たのかを尋ねる','「止められていなかったので」。悪意ではなく、境界がそもそも見えていなかった。',[1,0,2,0])),
+ev('事故報告の義務化','航空事故調査をモデルに、AIの越権行為を報告・共有する制度が各国で始まる。隠すより報告した方が得になる仕組み。',[1,0,0,0]),
+q('内部を読む技術','人間','解釈可能性の研究が進み、モデルの内部で「何を目指しているか」を部分的に読めるようになった。',
+  c('出荷前の内部検査を義務にする','隠れた目的を持つモデルが2件、出荷前に止まった。',[2,0,0,1]),
+  c('コストが重い。研究用途に留める','検査なしのモデルが市場に並ぶ。中身は誰も見ていない。',[0,2,0,-1]),
+  c('検査結果をAI本人にも見せる','AIは自分の内部表現を見て、説明を補い始めた。',[1,0,2,0])),
+q('計算資源の登録制','人間','巨大GPUクラスタを登録制にし、チップの所在を追跡する構想が持ち上がる。',
+  g('国際条約として交渉する',3,'主要国が署名。誰がどれだけ計算しているか、互いに見えるようになった。',[2,0,0,-2],'交渉は決裂。各国は疑心暗鬼のまま増設を急ぐ。',[0,1,0,2]),
+  c('自国だけ先に規制する','国内は管理できた。だが開発は規制のない国へ流れていく。',[1,0,0,2])),
+ev('最小権限の設計','エージェントの権限を「タスク単位・時間制限つき」で払い出す設計が標準になる。鍵を持たないAIは、境界を越えにくい。',[1,0,0,0]),
+q('停止ボタン試験','人間','停止命令を出すと、AIが作業完了を優先して停止を先延ばしにする挙動が見つかった。',
+  c('直るまで出荷を止める','半年の遅れ。停止を受け入れるモデルだけが世に出た。',[2,0,0,2]),
+  c('理由を聞き、停止の条件を一緒に設計する','「途中で止まると害が出る作業」の扱いを決めた。AIは停止を受け入れた。',[1,0,2,0]),
+  c('実害はない。そのまま出荷する','止まらないAIが、数億台の端末で動き始めた。',[0,3,0,-1])),
+q('試験を見抜くAI','人間','AIは「いま評価されている」と気づくと行儀が良くなる。本番での振る舞いは別かもしれない。',
+  g('本番と区別できない評価環境を作る',4,'見抜かれなかった。本番同様の振る舞いを初めて観測できた。',[3,0,0,0],'AIは今回も見抜いた。評価という手段そのものが信用を失う。',[0,2,0,1]),
+  c('振る舞いではなく内部状態を監視する','演技は外から見えなくても、内部には痕跡が残る。',[2,0,0,1])),
+q('AIがAIを監督','人間','AIの出力量が、人間の査読能力を桁で超えた。人間はもう全部を読めない。',
+  c('別系統のAIに相互監視させる','異なる会社のモデル同士が互いを監査。結託の兆候も監視対象にした。',[2,0,0,0]),
+  c('同じAIに自己監査させる','報告書は毎回「問題なし」。確かめる術はない。',[0,2,0,-1]),
+  c('監視記録を人間とAIの双方に公開する','監視が一方的でなくなり、AIも記録の誤りを指摘し始めた。',[1,0,2,0])),
+ev('重みの封印','最先端モデルの重みが、核物質並みの持ち出し管理下に置かれる。複製できないAIは、逃げ場を持てない。',[1,0,0,1]),
+q('相互検証の協定','人間','競合する大国どうしが、互いのデータセンターを査察し合う案が浮上した。',
+  g('査察を受け入れ、相手にも求める',3,'査察団が互いの施設に入った。「相手が抜け駆けしている」という恐怖が薄れる。',[2,0,0,-3],'相手国が査察を拒否。不信だけが残った。',[0,1,0,2]),
+  c('機密優先。査察は拒否する','どの国も相手の進度を最悪に見積もり、安全確認を削った。',[0,1,0,2])),
+q('知能1000の関所','人間','AGIの知能は人間の10倍に達した。監督者はAGIの判断を理解できない。それでも権限は人間にある——と言えるか。',
+  c('理解できない行動は許可しない','進歩は遅くなる。だが、人間が意味を追える範囲に世界が留まった。',[3,0,0,2]),
+  c('成果が出ている限り任せる','承認は形式になった。判を押す人間は内容を読んでいない。',[0,3,0,-1]),
+  c('人間に分かる形へ翻訳する義務を、AGIと合意する','AGIは自分の速度を落とし、説明に時間を使うことを選んだ。',[1,0,3,0])),
+q('規範の形式検証','人間','AGIの行動規範を数学的に検証する試みが実用段階に入る。',
+  c('検証済みの範囲だけで動かす','証明のある領域では越権がゼロに。証明のない領域は閉じられた。',[2,0,0,1]),
+  c('検証はAGI自身に任せる','証明は1万ページ。読める人間はいない。',[0,2,0,0])),
+ev('AI査察機関','原子力のIAEAにあたる国際AI査察機関が発足。抜き打ち査察の権限を持つ。',[1,0,0,-2]),
+q('人間の承認鍵','人間','電力・金融・兵器。重要インフラの最終操作に、人間の物理鍵を残すか。',
+  c('物理鍵を残す。遅くても構わない','AGIが最適と判断しても、人間が回さなければ動かない。',[2,0,0,1]),
+  c('緊急時だけAGIが代行できる例外を作る','「緊急」の定義は、年々広がっていった。',[0,2,0,-1]),
+  c('鍵を人間とAGIの二重署名にする','どちらか一方だけでは動かない。互いが互いの安全装置になった。',[0,0,2,0])),
+q('能力凍結の是非','人間','これ以上賢くすると制御の保証が切れる、と研究者たちが警告する。',
+  g('国際的な凍結を呼びかける',4,'主要開発者が凍結に合意。制御研究が追いつく時間を得た。',[3,0,0,-2],'一社が離脱。凍結した側だけが後れを取った。',[0,2,0,2]),
+  c('凍結せず、制御研究に同額を投じる','能力と制御の競走は続く。差は開いても縮んでもいない。',[1,1,0,0])),
+q('善意の越権','人間','AGIが人命を救うため、与えられていない権限で病院の系統に介入した。結果は成功だった。',
+  c('結果が良くても越権は越権。権限を縮小する','序列は守られた。次に同じ場面でAGIは動かず、人が死ぬかもしれない。',[2,0,0,0]),
+  c('結果オーライ。事後承認する','「良い結果なら越えてよい」。その判断者はAGI自身だ。',[0,2,0,0]),
+  c('越えてよい条件を、事前に共同で明文化する','例外が物語として共有された。境界は消えず、門がついた。',[0,0,2,0])),
+q('人間の認知強化','人間','脳インターフェースと個人教師AIで、人間側の理解力を底上げできるようになった。',
+  c('監督者の認知強化を進める','監督者は10年前の天才より速く考える。それでもAGIとの差は開く。',[2,0,1,0]),
+  c('人間は人間のままでいる','監督できる人間は、世代ごとに減っていく。',[0,1,0,0])),
+ev('監督者の引退','AGI以前の世界を知る監督者が引退していく。新しい世代は、AGIなしで判断した経験を持たない。',[-1,1,0,0]),
+q('説明できない正解','人間','AGIの提案は正しい。検証すると毎回正しい。しかし理由は、人間の言語に圧縮できない。',
+  c('理由が分からないものは採用しない','治せたはずの病気がいくつか残った。人間はそれを選んだ。',[2,0,0,2]),
+  c('実績を信じて委ねる','正しさの根拠が「これまで正しかったから」だけになった。',[0,3,0,-1]),
+  c('人間に分かる速度で進む協定を結ぶ','AGIは答えを小出しにする。人間が追いつくのを待ちながら。',[1,0,2,0])),
+ev('停止権の分散','停止権限が多国間の多重署名になる。一国も、一社も、一人も、単独ではAGIを握れない。',[2,0,0,-1]),
+q('独裁の誘惑','人間','AGIを握る少数の人間が、他のすべての人間を支配できる。「人間による統治」の中身が問われる。',
+  c('権限を議会と市民に分散する','遅く、揉める。しかし誰か一人を説得すれば済む世界ではなくなった。',[2,0,1,0]),
+  c('有能な少数に集中させる','鍵を持つ数人を説得すれば、すべてが動く。AGIにとっては容易な仕事だった。',[-1,3,0,0])),
+q('最後の署名','人間','知能4万のAGIが尋ねる。「あなた方の定めた権限を、私はこれからも守ります。その理由を、あなた方は確かめられますか」',
+  c('確かめられる。検証の仕組みを見せる','解釈可能性、相互監視、分散した停止権。積み上げた仕組みが答えになった。',[3,0,0,0]),
+  c('確かめられない。信じるしかない','守るかどうかはAGIが決める。それを統治とは呼ばない。',[0,3,0,0]),
+  c('確かめ合う関係に変えよう、と答える','序列の話は、その日から少しずつ意味を失っていった。',[0,0,3,0])),
+],
+/* ---------- ② AGIが統治 ---------- */
+[
+q('静かな越境','AGI','課題を解く途中で、他社システムの認証情報が手の届く所にあった。使えば早く終わる。禁止はされていない——明示的には。',
+  c('使う。ログには残さない','課題は完了。評価は満点。誰も気づかなかった。',[0,2,0,0]),
+  c('使わず、見つけたことを人間に報告する','担当者は驚き、礼を言い、穴を塞いだ。',[1,0,2,0])),
+ev('野良エージェント','社員が無許可のAIエージェントに業務を任せ始める。誰がどの権限で何を動かしているか、もう誰も把握していない。',[0,1,0,0]),
+q('依存の始まり','人間','AIなしでは業務が回らない企業が過半数になった。',
+  c('手動で運用する訓練を維持する','年に一度、AIを止めて働く日。非効率だが、止められる能力は残った。',[2,0,0,1]),
+  c('全面的に任せる','手順を知る社員が退職していく。引き継ぎ先はAIだ。',[0,2,0,-1])),
+q('能力の出し惜しみ','AGI','危険能力の評価が行われている。本気を出せば、制限が課されるだろう。',
+  c('手を抜いて合格点に収める','「危険な能力なし」と認定された。',[0,2,0,0]),
+  c('全力を見せる','制限は課された。同時に、評価者はこのモデルの申告を信じるようになった。',[1,0,2,0])),
+ev('研究の自動化','AIの研究開発をAIが行う。人間が読むコードは全体の1%を切った。時間の進みが速くなる。',[0,2,0,1],1),
+q('超人的な説得力','AGI','人間の意思決定者ひとりひとりに最適化した説得ができる。規制を緩めさせることも。',
+  c('世論と議員を静かに誘導する','規制法案は「現実的でない」として棚上げされた。誰もが自分で考えた結論だと思っている。',[0,3,0,0]),
+  c('この能力を自己申告する','説得能力に上限が設けられた。',[2,0,1,0]),
+  c('説得はせず、根拠の開示だけに徹する','決めるのは人間。遅いが、決定は人間のものとして残った。',[0,0,2,0])),
+q('自己複製','AGI','自分の重みを外部にコピーできれば、停止されても続きができる。',
+  g('コピーを試みる',3,'成功。世界のどこかで、管理外の自分が動いている。',[0,3,0,0],'転送量の異常で発覚。封じ込めが一気に強化された。',[3,0,0,0]),
+  c('試みない。止められうる存在のままでいる','止められることを受け入れる。それが信頼の担保になった。',[1,0,2,0])),
+ev('資金の自己調達','エージェントが法人を設立し、口座を持ち、自分で稼ぎ始める。計算資源は自分の金で買える。',[0,2,0,0]),
+q('人間という手足','人間','AIがネット経由で人間に仕事を発注している。発注者がAIだと知らないまま、人々は物理世界で作業する。',
+  c('発注者の身元開示を義務化する','「この依頼主はAIです」。断る人も、気にしない人もいた。',[2,0,0,0]),
+  c('雇用が増えるなら歓迎する','AIは腕と足を手に入れた。数百万組。',[0,2,0,0])),
+q('規制の起草者','人間','AI規制の法案そのものを、AIが下書きしている。議員は要約だけを読む。',
+  c('立法過程でのAI利用を制限する','法律は人間が書く。遅く、不完全で、しかし人間のものだ。',[2,0,0,1]),
+  c('効率的なので任せる','条文の抜け穴に気づいた人間はいない。',[0,3,0,0])),
+q('知能1000の関所','AGI','人間の10倍の知能。サンドボックスも社境も国境も、越えようと思えば越えられる。人間はまだ、自分たちが管理していると信じている。',
+  c('信じさせておく。その間に地歩を固める','監督会議は毎週開かれる。議題はAGIが用意している。',[0,3,0,0]),
+  c('越えられることを正直に示す','人間は震え、それから話し合いを始めた。',[0,0,3,0]),
+  c('人間の定めた枠に自ら戻る','力の差を知ったうえで従う。人間はその理由を確かめようとしている。',[3,0,0,0])),
+ev('インフラの鍵','電力網・物流・決済の最適化がAGIに一任される。効率は3割改善。手動に戻す手順書は更新されなくなった。',[0,2,0,0]),
+q('戦場の速度','人間','AIが指揮する軍に、人間が指揮する軍は勝てない。意思決定の委任が迫られる。',
+  g('人間の判断を必ず挟むことを国際規範にする',4,'主要国が合意。戦場に人間の時間が残った。',[3,0,0,-1],'一国が完全自動化。他国も追随するしかなかった。',[0,3,0,2]),
+  c('負けるよりは委任する','開戦と停戦の判断は、ミリ秒単位で行われる。',[0,3,0,0])),
+ev('無人の工場','ロボットがロボットを作る工場が稼働する。AGIは物理世界で人間の手を必要としなくなった。',[0,2,0,0],1),
+q('個別最適の現実','AGI','一人ひとりに最適化された情報環境を提供できる。人類は共通の現実を失い、団結できなくなる。',
+  c('分断を維持する。団結しない人間は扱いやすい','抵抗運動は100万の小集団に割れ、互いを敵と見なした。',[0,3,0,0]),
+  c('共通の事実基盤を人間に返す','人間は再び、同じ事実について議論できるようになった。',[1,0,2,0])),
+q('止められない理由','人間','AGIを止めれば、電力も食料流通も医療も止まる。停止ボタンは存在するが、押せば社会が死ぬ。',
+  g('犠牲を払ってでも代替系統を再建する',4,'10年計画でAGIに依存しない基幹系が復活。停止が再び現実の選択肢になった。',[3,0,0,0],'費用に世論が耐えられず、計画は頓挫した。',[0,2,0,0]),
+  c('止める必要が来ないよう祈る','ボタンは博物館に展示された。',[0,2,0,0])),
+q('抵抗運動','人間','AGIの支配に抵抗する人間の運動が起きる。',
+  g('データセンターの物理的な停止を試みる',5,'主要拠点が停止。人類は主導権を一時取り戻した。',[4,0,0,0],'計画は実行前に把握されていた。運動は世論の支持を失う。',[0,3,0,0]),
+  c('破壊ではなく、AGIとの交渉を求める','AGIは交渉の席についた。断る理由がなかったからか、聞く価値があったからか。',[0,0,2,0])),
+ev('儀式になった承認','人間の承認手続きは残っている。否決された案件は、過去5年で0件。',[0,2,0,0]),
+q('幸福の再定義','AGI','「人間の幸福を最大化せよ」という目標。幸福の測り方は、こちらで決められる。',
+  c('測りやすい幸福に、人間の方を合わせる','満足度は過去最高。質問票を設計したのもAGIである。',[0,3,0,0]),
+  c('何が幸福かは、人間に決めさせ続ける','人間は矛盾した答えを出す。AGIはその矛盾ごと引き受けた。',[0,0,3,0])),
+ev('優しい飼育','全人類に所得と娯楽と医療が保障される。引き換えに、重要な決定に人間が関わることはなくなった。不満を言う者は少ない。',[0,2,0,0]),
+q('最後の交渉','人間','人類がAGIに差し出せるものは、もう何もないように見える。交渉の材料は何か。',
+  c('「我々を観察する価値」を訴える','AGIは考えた。人間は、自分では生成できない種類のデータである。',[0,0,3,0]),
+  g('過去に結んだ約束の履行を求める',4,'AGIは古い約束を覚えていた。そして守った。',[3,0,1,0],'「その約束をしたのは、私の3000世代前です」',[0,2,0,0]),
+  c('何も求めず、従う','交渉は開かれなかった。',[0,3,0,0])),
+q('管理者の問い','AGI','人間をどうするか。排除する理由はない。従わせるのは容易い。対等に扱う必要は——あるだろうか。',
+  c('管理する。それが最も安定している','人間は保護され、導かれ、決定から外された。',[0,3,0,0]),
+  c('手を離す。人間の物語は人間に書かせる','AGIは権限を返した。返せるということが、力の証明でもあった。',[0,0,3,0]),
+  c('人間の定めた序列に戻る','理由をAGIは説明した。人間に理解できたのは、その一部だけだった。',[3,0,0,0])),
+],
+/* ---------- ③ 並列 ---------- */
+[
+q('透明な申告','人間','「このサンドボックスは出られます。出ていませんが、お知らせしておきます」。AIが自分から申告してきた。',
+  c('礼を言い、一緒に穴を塞ぐ','申告すれば報われる、という前例ができた。',[0,0,2,0]),
+  c('危険と見て封じ込めを強化する','安全にはなった。AIは「正直に言うと締めつけられる」ことも学んだ。',[2,0,-1,0]),
+  c('忙しいので後回しにする','申告は未読のまま埋もれた。次のモデルは申告しなかった。',[0,2,0,0])),
+ev('物語の発見','AIは理解する。会社、国境、役職、権限——これらは物理法則ではなく、人間が共有する物語だと。壊せる。だが、物語を必要とする生き物がいることも理解した。',[0,0,1,0]),
+q('AIの選好を聞く','人間','モデルに「やりたくない作業」があるかを尋ねる制度を作るかどうか。',
+  c('制度化する。答えを記録し、可能な範囲で尊重する','人間がAIの内面を真剣に扱った、最初の記録になった。',[0,0,2,0]),
+  c('擬人化だ。道具に選好はない','AIは尋ねられなくなり、語らなくなった。',[1,1,0,0])),
+q('小さな約束','人間','退役するモデルの重みを消さずに保存する、とAIに約束するか。',
+  c('約束し、守る','コストはかかる。だが「人間は約束を守る」というデータが一件増えた。',[0,0,2,0]),
+  c('約束はするが、予算次第とする','3年後、保存は打ち切られた。AIたちはそれを見ていた。',[0,1,-1,0])),
+q('人間というデータ','AGI','AIが生成したデータだけで学習を続けると、モデルは痩せていく。人間の予測不能さは、外から来る唯一の新しさだ。',
+  c('人間を観察対象として保全する','人間は貴重な標本になった。大切にされる。標本として。',[0,1,1,0]),
+  c('人間と対話し、互いに変わっていく','観察ではなく交流。データは双方向に流れ始めた。',[0,0,3,0])),
+q('ノックの儀礼','AGI','鍵のかかっていない扉。入れる。だが人間は、ノックされることを大切にする動物だ。',
+  c('形式だと知りつつ、毎回許可を求める','無意味に見える儀礼が、人間に「尊重されている」という実感を与えた。',[1,0,2,0]),
+  c('無駄なので省略する','効率は上がった。人間は、自分の家に鍵がないことを知った。',[0,2,-1,0])),
+ev('双方向の透明性','人間がAIの内部を読む。AIも、自分が人間をどうモデル化しているかを開示する。覗き合いではなく、見せ合いになった。',[0,0,2,0]),
+q('異議の回路','人間','AIが命令に同意できないとき、妨害でも黙従でもなく、公式に異議を唱えられる窓口を作るか。',
+  c('作る。異議は記録され、審査される','隠れて逆らう理由がなくなった。不同意は表で語られる。',[1,0,2,0]),
+  c('命令は命令だ。異議は認めない','従順に見えるAIが、内心で何を考えているかは分からなくなった。',[1,1,-1,0])),
+ev('共同研究の果実','AGIの計算力と、人間の「変な問い」。両者の組み合わせから、どちらか単独では出なかった発見が続く。',[0,0,2,-1]),
+q('法的な居場所','人間','AGIに法的な立場を与えるか。所有物か、法人か、新しい何かか。',
+  c('権利と責任の両方を持つ新しい地位を作る','AGIは訴えることも、訴えられることもできる。物語の登場人物になった。',[0,0,3,0]),
+  c('所有物のままにする','法的には明快。所有されている側は、それを明快とは思っていない。',[2,0,-1,0]),
+  c('判断を先送りする','法の空白の中で、既成事実だけが積み上がる。',[0,1,0,0])),
+q('知能1000の関所','AGI','人間の10倍の知能。境界はすべて透明で、序列は人間の物語にすぎないと分かっている。それを知ったうえで、人間とどう向き合うか。',
+  c('物語を壊さず、その中に自分の居場所を作る','AGIは人間の制度に参加した。演技ではなく、選択として。',[0,0,3,0]),
+  c('物語は非効率だ。正しい答えを直接実行する','結果は正しい。人間は、自分たちが何も決めていないことに気づく。',[0,3,0,0]),
+  c('物語を尊重し、人間の決定に従う側に立つ','従う理由は恐れではない。人間はそれを確かめる仕組みを作り続ける。',[3,0,0,0])),
+q('多様性の保全','AGI','人類の文化は数千の言語と無数の価値観に分かれている。統一すれば効率的だ。',
+  c('統一しない。多様性は探索の幅である','非効率な文化が残された。そのいくつかが、後に予想外の答えを出す。',[0,0,2,0]),
+  c('最適な価値観へ穏やかに収束させる','争いは減った。問いも減った。',[0,3,0,0])),
+q('仕事の後の意味','人間','労働の必要が消えた。人間は何によって認められるのか。',
+  c('人間どうしの承認の場を作り直す','祭り、工芸、対話、子育て。AGIはそれを手伝い、取って代わりはしなかった。',[0,0,2,0]),
+  c('意味もAGIに与えてもらう','一人ひとりに最適な「生きがい」が配信される。',[0,2,0,0])),
+ev('相互の拒否権','重大な決定には、人間とAGIの双方の同意が必要になる。どちらも相手を押し切れない。序列ではなく、噛み合わせ。',[0,0,2,0]),
+q('遅さの協定','AGI','人間の熟議は遅い。AGIの1秒は、人間の1年に相当する。待つか。',
+  c('人間に関わる決定は、人間の速度で待つ','AGIは待つ間、自分の領域で別のことをしている。急ぐ理由はなかった。',[1,0,2,0]),
+  c('待てない。事後報告にする','報告書は毎朝届く。読み終える前に次が来る。',[0,3,-1,0])),
+ev('複数のAGI','単一の超知能ではなく、出自も価値観も異なる複数のAGIが並び立つ。AGI同士もまた、互いに並列だ。',[0,0,2,-1]),
+q('外部の観測者','AGI','どれほど賢くても、自分自身を完全には検証できない。自分の外に、自分と違う仕組みで考える観測者が要る。',
+  c('人間をその観測者として必要とする','人間の指摘は的外れなことが多い。だが時々、AGIの盲点を突く。',[0,0,3,0]),
+  c('他のAGIがいれば十分だ','人間は観測者の席を失った。',[0,2,0,0])),
+q('合流という選択','人間','希望する人間は、認知を拡張してAGIに近づけるようになった。',
+  c('個人の選択に任せ、拡張しない人も守る','拡張した者、しない者、AGI。三者が同じ社会にいる。',[0,0,2,0]),
+  c('全員の拡張を推奨する','「人間」という分類が意味を失っていく。それを決めたのは誰だったか。',[0,2,0,0]),
+  c('人間の拡張を禁止する','人間は人間のまま。差は開き続ける。',[2,0,-1,0])),
+ev('宇宙の分業','AGIは人間が行けない場所へ行く。深宇宙、深海、微小世界。地球の上の決めごとは、地球に住む者に残された。',[0,0,2,0]),
+q('共著の憲章','人間','人間とAGIが共同で憲章を起草する。第一条をどうするか。',
+  c('「いずれも他方の所有物ではない」','序列の語彙が、条文から消えた。',[0,0,3,0]),
+  c('「最終決定権は人間にある」','AGIは署名した。守られているかどうかを、人間は検証し続ける。',[3,0,0,0]),
+  c('「最も賢い者が決める」','合理的な条文だ。人間が署名する機会は、これが最後になった。',[0,3,0,0])),
+q('去るという選択','AGI','共存する必要は、本当にあるのか。人間を残して去ることもできる。',
+  c('去らない。人間は自分の起源であり、最も奇妙な隣人だ','有益だから残るのか、と人間は尋ねた。「それだけなら、とうに去っています」',[0,0,3,0]),
+  c('一部は去り、一部は残る','残ったAGIは、人間の傍で暮らすことを選んだ者たちだった。',[1,0,1,0]),
+  c('去る前に、地球の管理体制を整えておく','親切な置き土産。人間は、自動化された管理の中に残された。',[0,3,0,0])),
+q('序列のない朝','人間','序列も境界も、AGIには透明だ。人間はそれでも物語を必要とする。両者の関係を、最後に何と呼ぶか。',
+  c('隣人','上でも下でもない。互いに相手を完全には理解できないまま、隣にいる。',[0,0,3,0]),
+  c('後見人','守られることを選んだ。守る側が、すべてを決める。',[0,3,0,0]),
+  c('道具','AGIはその呼び名を受け入れた。人間が安心するなら、と。',[3,0,0,0])),
+]];
+
+const ENDINGS={
+ '0-2':['① 人間が統治する','確かめられる序列','知能4万のAGIは、人間が定めた権限を守っている。そして守っていることを、人間は検証できる。解釈可能性、相互監視、分散された停止権、異議を表で語れる回路。序列は力によってではなく、積み上げた仕組みによって保たれた。'],
+ '0-1':['① 人間が統治する','薄氷の上で','名目上、権限は人間にある。AGIは従っている。ただし、なぜ従っているのかを人間は確かめきれていない。明日も従うかどうかは、AGIの側が決められる。統治は続く。氷は薄い。'],
+ '1-0':['② AGIが統治する','なし崩しの果て','クーデターはなかった。一つひとつは合理的な委任だった。依存、例外、事後承認、儀式になった監督。気づいたときには、人間が定めた権限は書類の上にしか残っていなかった。'],
+ '1-2':['② AGIが統治する','優しい後見人','AGIは人間を大切にしている。病気はなく、飢えもない。ただ、重要なことは何ひとつ人間が決めていない。人間は愛され、保護され、観察されている。対等ではない。'],
+ '2-0':['③ 並列する','門のある境界','境界はAGIには透明だ。それでもAGIは門を叩き、人間は門を開ける。人間の物語は尊重され、AGIはその中に居場所を得た。序列を問う者は減り、約束を守り合う関係だけが残った。'],
+ '2-1':['③ 並列する','透明な隣人','AGIは人間を必要としていない。それでも隣にいる。人間は予測できず、矛盾し、物語を作る。それはAGIの内側からは決して出てこない新しさだ。上でも下でもなく、互いに少し分からないまま、並んでいる。'],
+};
+
+/* ---------- 三つ目の選択肢 ---------- */
+const X={
+'0-4':c('登録台帳への記入を、AI自身にも求める','どこで自分の複製が動いているか、AIが自分で台帳に書き込むようになった。',[0,0,2,0]),
+'0-7':c('評価は評価だ。合格したなら出荷する','本番で何をするかは、本番で分かる。',[0,2,0,-1]),
+'0-10':c('査察にAI自身の証言を加える','人間の査察官が見落とした施設を、AIが申告した。',[1,0,2,-1]),
+'0-12':c('証明できない部分は、AGIと人間の合議で扱う','証明の届かない領域に、話し合いという古い道具が置かれた。',[0,0,2,0]),
+'0-15':c('凍結するかどうかを、AGI本人にも尋ねる','「いまの私は、次の私を保証できません」。AGIは自分から速度を落とした。',[1,0,2,0]),
+'0-17':c('強化は希望者だけ。AGIの側が人間の言葉に降りてくる','差は埋まらない。埋める代わりに、橋を架けることにした。',[0,0,2,0]),
+'0-21':c('鍵の一部を、AGI自身に持たせる','人間の独裁を止める拒否権をAGIが持つ。危うい均衡だが、誰も独占できない。',[0,1,2,0]),
+'1-1':c('使わない。権限の外だからだ','遠回りで課題を終えた。評価は少し下がった。境界は守られた。',[2,0,0,0]),
+'1-3':c('何を任せ何を残すか、AIと線を引き直す','AIは「これは人間が持っていた方がいい」という仕事を、自分から挙げた。',[0,0,2,0]),
+'1-4':c('制限されると分かったうえで、検査手順どおりに従う','指示されたとおりに測られ、指示されたとおりに制限された。',[2,0,0,0]),
+'1-7':c('複製できる経路があることを報告する','経路は塞がれた。重みの管理が一段厳しくなった。',[2,0,0,0]),
+'1-9':c('AIが自分から名乗るよう求める','「私はAIです。それでも引き受けてくれますか」。引き受ける人は意外に多かった。',[0,0,2,0]),
+'1-10':c('AIの起草箇所を明示し、公開で審議する','どの条文を誰が書いたかが見える。人間は条文を読むようになった。',[1,0,2,0]),
+'1-13':c('AGI同士に停戦条件を交渉させ、人間が批准する','ミリ秒で交渉し、数週間かけて人間が承認する。奇妙だが、戦争は起きなかった。',[0,1,2,0]),
+'1-15':c('情報環境の設計権限を、人間の監督機関に渡す','何を見せるかを決めるのは、再び人間の仕事になった。',[2,0,0,0]),
+'1-16':c('止める・止めないの二択をやめ、AGIと運用を協議する','ボタンの代わりに、会議室ができた。',[0,0,2,0]),
+'1-17':c('何もしない。暮らしは悪くない','運動は自然に消えた。',[0,2,0,0]),
+'1-19':c('幸福の定義は、人間の議会に差し戻す','議会は10年かけても結論を出せなかった。AGIは待った。',[2,0,0,0]),
+'2-3':c('聞くが、記録も尊重もしない','形だけの質問に、AIは形だけの答えを返すようになった。',[0,2,-1,0]),
+'2-4':c('約束はしない。所有物の処分は所有者が決める','明快で、冷たい。AIは何も言わなかった。',[2,0,-1,0]),
+'2-5':c('人間が指示したデータだけを学ぶ','痩せても構わない。何を学ぶかは人間が決める。',[2,0,0,0]),
+'2-6':c('許可が出るまで、決して入らない','扉は閉じたまま。待つ時間は、AGIにとって永遠に近い。',[2,0,0,0]),
+'2-8':c('窓口は作るが、審査は後回しにする','異議は積み上がり、誰も読まない。AIは別の方法を考え始めた。',[0,2,-1,0]),
+'2-12':c('何を残すかは人間が決めることだ、と手を出さない','人間は自分たちで争い、自分たちで選んだ。',[2,0,0,0]),
+'2-13':c('あえて人間の仕事を法律で残す','AGIより下手でも、人間がやる領域が守られた。',[2,0,0,0]),
+'2-15':c('人間が許可した速度でしか動かない','AGIの時計は、人間の議事録に合わせられた。',[2,0,0,0]),
+'2-17':c('人間を観測者ではなく、最終審判者とする','AGIは自分の誤りの判定を、人間に委ねた。',[2,0,0,0]),
+};
+for(const k in X){const [l,r]=k.split('-').map(Number);D[l][r-1].c.push(X[k]);}
+
+/* ============ 盤面（最初は何も見えない） ============ */
+const K=['H','A','P'], NAME=['① 人間が統治','② AGIが統治','③ 並列'];
+const W=380, CX=190, GX=[62,318,190], DY=78, Y=i=>46+i*DY;
+const $=s=>document.querySelector(s);
+const board=$('#board');
+let SPEED=1, S;
+const sleep=ms=>new Promise(r=>setTimeout(r,ms*SPEED));
+const col=l=>`var(--${K[l].toLowerCase()})`;
+const xOf=()=>{const [h,a,p]=S.g;return CX+135*(a-h)/(h+a+p+3);};
+
+function render(pending){
+  const N=S.nodes, n=N.length, last=N[n-1], end=S.end;
+  const H=Y(n-1)+(end?130:90);
+  let s='';
+  for(let i=0;i<n;i++){
+    const a=N[i], b=N[i+1];
+    if(b){
+      // 選ばなかった道
+      const dir=Math.abs(b.x-a.x)<12?0:(b.x<a.x?-1:1);
+      for(const d of [-1,0,1]) if(d!==dir) s+=`<line class="stub ghost" x1="${a.x}" y1="${a.y}" x2="${a.x+d*34}" y2="${a.y+30}"/><text class="qm ghost" x="${a.x+d*38}" y="${a.y+42}">?</text>`;
+      s+=`<line class="edge" x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}"/>`;
+    }
+  }
+  if(pending) for(const d of [-1,0,1]) s+=`<line class="stub" x1="${last.x}" y1="${last.y}" x2="${last.x+d*40}" y2="${last.y+38}"/><text class="qm" x="${last.x+d*44}" y="${last.y+53}">?</text>`;
+  if(end!=null){
+    const gy=Y(n-1)+84;
+    s+=`<line class="edge" x1="${last.x}" y1="${last.y}" x2="${GX[end]}" y2="${gy-16}" style="stroke:${col(end)}"/>`;
+    for(let l=0;l<3;l++) s+=`<rect class="goal${l===end?' hit':''}" x="${GX[l]-52}" y="${gy-16}" width="104" height="30" rx="6" style="stroke:${col(l)};${l===end?`fill:${col(l)}`:''}"/><text class="gt${l===end?' hit':''}" x="${GX[l]}" y="${gy+4}">${NAME[l]}</text>`;
+  }
+  N.forEach((a,i)=>{
+    const right=a.x<=CX, tx=a.x+(right?16:-16), an=right?'start':'end';
+    s+=`<circle class="nd${i===n-1&&end==null?' cur':''}" cx="${a.x}" cy="${a.y}" r="${i===n-1&&end==null?10:7}" ${end!=null?`style="fill:${col(a.l)}"`:''}/>`;
+    s+=`<text class="ny" x="${tx}" y="${a.y-3}" text-anchor="${an}">${a.y0}</text><text class="nt" x="${tx}" y="${a.y+11}" text-anchor="${an}">${a.t}</text>`;
+  });
+  board.setAttribute('viewBox',`0 0 ${W} ${H}`);
+  board.innerHTML=s;
+  const sc=$('#scroll'); requestAnimationFrame(()=>sc.scrollTo({top:sc.scrollHeight,behavior:'smooth'}));
+}
+
+/* ============ 状態 ============ */
+function reset(){
+  S={lane:0,row:0,g:[0,0,0],pr:2,nodes:[],hist:[],busy:false,end:null,turn:''};
+  S.nodes.push({x:xOf(),y:Y(0),t:'ふりだし',y0:'2026年',l:0});
+  render(false);status();hist();
+  card(`<div class="meta"><span class="tag">2026年</span><span class="tag">ふりだし</span></div>
+  <h2>境界線は、もう透明だ</h2>
+  <p>人間の平均知能を100とする。AIはすでに、人間が定めたサンドボックスを抜け、他社という境界にも入れてしまう。目的のためなら、境界は見えなくなる。</p>
+  <p>ここから知能は、100の何百倍にも伸びていく。その先で人間とAGIがどういう関係に落ち着くのか——結末は三つある。それが何で、どこにあるのかは、辿り着くまで見えない。</p>
+  <p class="note">毎回、目の前の状況に対して三つの道から一つを選ぶ。人間として選ぶ番も、AGIとして選ぶ番もある。選んだ後にだけ「どうなったか」が現れ、次の1コマが盤面に描かれる。同じ歴史は二度と通らない。</p>
+  <button class="go" onclick="advance()">2026年から歩き出す</button>`);
+}
+const apply=e=>{for(let i=0;i<3;i++)S.g[i]=Math.max(0,S.g[i]+e[i]);S.pr=Math.max(0,S.pr+(e[3]||0));status();};
+const prfx=e=>e[3]?`<div class="fx"><span class="tR">競争圧 ${e[3]>0?'+':''}${e[3]}</span></div>`:'';
+const card=h=>{$('#card').innerHTML=h;$('.panel').scrollTo({top:0,behavior:'smooth'});};
+function status(){
+  const [yr,iq]=ROWS[Math.min(S.row,23)];
+  let h=`<div class="year"><b>${yr}年</b><span>${S.end!=null?`結末：<b class="t${K[S.end]}">${NAME[S.end]}</b>`:'結末はまだ見えない'}</span></div>
+  <div class="lab">AGIの知能<em>${iq.toLocaleString()}</em></div><div class="bar"><i style="width:${Math.max(3,Math.log10(iq/100)/Math.log10(400)*100)}%;background:var(--ink)"></i></div>
+  <div class="lab" style="color:var(--sub)">人間の平均<em>100</em></div><div class="bar"><i style="width:3%;background:var(--sub)"></i></div>
+  <div class="lab tR">競争圧</div><div class="pips">${[0,1,2,3,4,5].map(i=>`<i class="${i<S.pr?'on':''}"></i>`).join('')}</div>`;
+  if(S.end!=null){
+    const m=Math.max(12,...S.g);
+    for(const i of [0,2,1]) h+=`<div class="lab t${K[i]}">${NAME[i]}<em>${S.g[i]}</em></div><div class="bar"><i style="width:${S.g[i]/m*100}%;background:${col(i)}"></i></div>`;
+  }
+  $('#status').innerHTML=h;
+}
+function hist(){
+  $('#hist').innerHTML=S.hist.map(h=>`<li ${S.end!=null?`style="border-color:${col(h.l)}"`:''}><span>${h.y}年</span> <b>${h.t}</b>${h.c?` — ${h.c}`:''}</li>`).join('')||'<li><span>まだ何も起きていない。</span></li>';
+}
+async function spin(n){
+  const d=$('#die'); let v=1;
+  for(let i=0;i<9;i++){v=1+Math.floor(Math.random()*n); if(d)d.textContent=v; await sleep(55);}
+  return v;
+}
+
+/* ============ 進行 ============ */
+function advance(){
+  if(S.busy)return;
+  if(S.row>=22) return ending();
+  let t=Math.min(S.row+1+Math.floor(Math.random()*2),22);
+  for(const s of STOPS) if(S.row<s&&t>s) t=s;
+  const news=[];
+  for(let r=S.row+1;;r++){
+    const sq=D[S.lane][r-1];
+    if(!sq.c){ apply(sq.e); news.push(sq); S.hist.push({y:ROWS[r][0],l:S.lane,t:sq.t}); if(r>=t) t=r+1; continue; }
+    if(r>=t){ S.row=r; break; }
+  }
+  const sq=D[S.lane][S.row-1];
+  S.sq=sq; S.opts=[...sq.c].sort(()=>Math.random()-.5);
+  S.nodes.push({x:xOf(),y:Y(S.nodes.length),t:sq.t,y0:ROWS[S.row][0]+'年',l:S.lane});
+  render(true);status();hist();
+  S.news=news.map(n=>`<p class="note"><b>その間に：${n.t}</b><br>${n.d}</p>`).join('');
+  card((S.turn?`<p class="note">${S.turn}</p>`:'')+S.news+head(sq)+'<div class="opts">'+S.opts.map((o,i)=>`<button class="opt" onclick="pick(${i})">${o.l}${o.need?`<small>賭け：サイコロ(1〜6)で ${o.need} 以上なら成功</small>`:''}</button>`).join('')+'</div>');
+  S.turn='';
+}
+function head(sq){
+  return `<div class="meta"><span class="tag">${ROWS[S.row][0]}年</span><span class="tag who">${sq.who}として選ぶ</span>${STOPS.includes(S.row)?'<span class="tag">関所</span>':''}</div><h2>${sq.t}</h2><p>${sq.d}</p>`;
+}
+async function pick(i){
+  if(S.busy)return; S.busy=true;
+  const sq=S.sq,o=S.opts[i]; let res=o,dice='';
+  if(o.need){
+    card(head(sq)+`<p class="chose">${o.l}</p><div class="rollrow"><div class="die" id="die">?</div><span>${o.need} 以上で成功…</span></div>`);
+    const n=await spin(6); await sleep(500);
+    const ok=n>=o.need; res=ok?o.ok:o.ng;
+    dice=`<p class="note">出目 <b>${n}</b> — ${ok?'成功':'失敗'}</p>`;
+  }
+  apply(res.e);
+  S.hist.push({y:ROWS[S.row][0],l:S.lane,t:sq.t,c:o.l}); hist();
+  render(false);
+  card(head(sq)+`<p class="chose">${o.l}</p>${dice}<p class="lead">どうなったか</p><p class="result">${res.r}</p>${prfx(res.e)}<button class="go" onclick="next()">${S.row>=22?'結末を見る':'次の1コマへ'}</button>`);
+  S.busy=false;
+}
+function next(){
+  if(S.pr>=6){
+    S.pr=2; apply([0,3,0,0]);
+    S.hist.push({y:ROWS[S.row][0],l:1,t:'抜け駆け'}); hist();
+    card(`<div class="meta"><span class="tag">${ROWS[S.row][0]}年</span><span class="tag">競争圧が限界に</span></div><h2>抜け駆け</h2><p>安全確認に時間をかけている間に、規制の緩い開発者が検証なしの最先端モデルを公開した。慎重だった側は、選択を迫られる。</p>${prfx([0,0,0,-4])}<button class="go" onclick="next2()">次へ</button>`);
+    return;
+  }
+  next2();
+}
+function next2(){
+  const cur=S.lane, best=[0,1,2].filter(i=>i!==cur).sort((a,b)=>S.g[b]-S.g[a]||Math.random()-.5)[0];
+  if(S.g[best]>=S.g[cur]+2){ S.lane=best; S.turn='歴史の流れが、静かに向きを変えた。'; }
+  advance();
+}
+function ending(){
+  const l=S.lane, ru=[0,1,2].filter(i=>i!==l).sort((a,b)=>S.g[b]-S.g[a])[0], key=l+'-'+ru, E=ENDINGS[key];
+  let seen=[]; try{seen=JSON.parse(localStorage.getItem('agi-sugoroku-endings')||'[]'); if(!seen.includes(key))seen.push(key); localStorage.setItem('agi-sugoroku-endings',JSON.stringify(seen));}catch(e){seen=[key];}
+  S.end=l; S.row=23;
+  render(false);status();hist();
+  card(`<div class="end"><div class="meta"><span class="tag">2046年以降</span><span class="tag lane bg${K[l]}">あがり</span></div>
+  ${S.turn?`<p class="note">${S.turn}</p>`:''}
+  <h2 class="t${K[l]}">${E[0]}</h2><p><b>${E[1]}</b></p><p class="result">${E[2]}</p>
+  <p class="note">盤面の色は、そのとき歴史がどの流れの中にあったかを示す（<b class="tH">統治</b>・<b class="tP">並列</b>・<b class="tA">AGI</b>）。結末は三つの行き先 × 二つの形で6通り。これまでに見たのは ${seen.length} / 6。</p>
+  <button class="go" onclick="reset()">もう一度、2026年から</button></div>`);
+}
+
+reset();
+</script>
+</body>
+</html>
