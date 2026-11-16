@@ -21,12 +21,12 @@ body{background:var(--bg);color:var(--ink);font-family:var(--sans);line-height:1
 header.top{display:flex;align-items:baseline;gap:14px;padding:10px 18px;border-bottom:1px solid var(--line)}
 header.top h1{font-family:var(--serif);font-size:22px;margin:0;letter-spacing:.12em}
 header.top p{margin:0;color:var(--sub);font-size:13px}
-main{flex:1;min-height:0;display:grid;grid-template-columns:minmax(300px,440px) minmax(0,1fr);gap:0}
+main{flex:1;min-height:0;display:grid;grid-template-columns:minmax(300px,440px) minmax(0,1fr);grid-template-rows:minmax(0,1fr);gap:0}
 .boardwrap{display:flex;flex-direction:column;min-height:0;border-right:1px solid var(--line);background:var(--paper)}
 .lanehead{position:relative;height:34px;border-bottom:1px solid var(--line);flex:none}
 .lanehead span{position:absolute;top:7px;transform:translateX(-50%);font-size:12px;font-weight:700;white-space:nowrap}
 .lanehead .h{left:23.7%;color:var(--h)}.lanehead .p{left:52.6%;color:var(--p)}.lanehead .a{left:81.6%;color:var(--a)}
-#scroll{flex:1;min-height:0;overflow-y:auto}
+#scroll{flex:1;min-height:0;overflow-y:auto;padding-bottom:28px}
 #board{display:block;width:100%;height:auto}
 .panel{min-height:0;overflow-y:auto;padding:16px 20px 40px}
 .panel>*{max-width:660px;margin-left:auto;margin-right:auto}
@@ -71,6 +71,32 @@ main{flex:1;min-height:0;display:grid;grid-template-columns:minmax(300px,440px) 
 .gt{font-size:11px;font-weight:700;text-anchor:middle;fill:var(--sub)}
 .gt.hit{fill:#fff}
 .lead{font-size:12px;color:var(--sub);margin:0 0 2px!important;letter-spacing:.1em}
+/* ending scenes */
+.scene{display:block;width:100%;height:auto;border-radius:8px;background:var(--bg);margin-bottom:14px}
+.scene .k{stroke:var(--ink);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.scene .mf{fill:var(--ink)}
+.scene .sa{fill:none;stroke:var(--a);stroke-width:2;stroke-linejoin:round}
+.scene .fa{fill:var(--a)}
+.scene .sh{fill:none;stroke:var(--h);stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.scene .fh{fill:var(--h)}
+.scene .sp{fill:var(--p);opacity:.55}
+.scene .lp{fill:none;stroke:var(--p);stroke-width:2}
+.scene .gold{fill:var(--pr)}
+.scene text{font-size:13px;font-weight:700;fill:var(--ink);text-anchor:middle}
+.scene text.sm{font-size:10.5px;font-weight:400;fill:var(--sub)}
+@keyframes sc-spin{to{transform:rotate(360deg)}}
+@keyframes sc-nod{0%,100%{transform:rotate(-3deg)}50%{transform:rotate(3deg)}}
+@keyframes sc-lever{0%,100%{transform:rotate(-28deg)}50%{transform:rotate(28deg)}}
+@keyframes sc-walk{from{transform:translateX(0)}to{transform:translateX(var(--d))}}
+@keyframes sc-bob{50%{transform:translateY(-7px)}}
+@keyframes sc-pop{0%,55%{opacity:0;transform:translateY(5px)}65%,90%{opacity:1;transform:none}100%{opacity:0}}
+@keyframes sc-fall{0%{transform:translateY(0);opacity:0}15%,80%{opacity:1}100%{transform:translateY(var(--d));opacity:0}}
+@keyframes sc-grow{0%,100%{transform:scaleY(.55)}50%{transform:scaleY(1)}}
+@keyframes sc-blink{50%{opacity:.15}}
+@keyframes sc-dash{to{stroke-dashoffset:-48}}
+@keyframes sc-in{from{opacity:0}to{opacity:1}}
+.scene{animation:sc-in 1.2s ease}
+@media (prefers-reduced-motion:reduce){.scene,.scene *{animation:none!important}}
 /* card */
 #card{background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:18px 20px;margin-bottom:16px}
 .meta{display:flex;gap:8px;flex-wrap:wrap;font-size:12px;margin-bottom:6px}
@@ -379,7 +405,7 @@ const xOf=()=>{const [h,a,p]=S.g;return CX+135*(a-h)/(h+a+p+3);};
 
 function render(pending){
   const N=S.nodes, n=N.length, last=N[n-1], end=S.end;
-  const H=Y(n-1)+(end?130:90);
+  const H=Y(n-1)+(end!=null?130:90);
   let s='';
   for(let i=0;i<n;i++){
     const a=N[i], b=N[i+1];
@@ -442,6 +468,71 @@ async function spin(n){
   return v;
 }
 
+/* ============ 結末の情景 ============ */
+function scene(l){
+  const poly=(r,n)=>Array.from({length:n},(_,i)=>{const a=i*2*Math.PI/n;return (r*Math.cos(a)).toFixed(1)+','+(r*Math.sin(a)).toFixed(1);}).join(' ');
+  const man=(x,y,inner='',extra='',rot=0)=>`<g transform="translate(${x},${y}) rotate(${rot})"><g ${inner}><circle class="mf" cx="0" cy="-22" r="5"/><path class="k" d="M0-17V-4M0-4l-5 10M0-4l5 10M-6-12h12"/>${extra}</g></g>`;
+  const an=(a,v='')=>`style="animation:${a}${v?';'+v:''}"`;
+  if(l===0) return `<svg class="scene" viewBox="0 0 600 280" role="img" aria-label="壇上の小さな人間がレバーを操作し、巨大なAGIがうなずいている。レバーのケーブルはつながっていない。">
+  <line class="k" x1="0" y1="240" x2="600" y2="240"/>
+  <g transform="translate(415,128)"><g ${an('sc-nod 2.4s ease-in-out infinite')}>
+    <polygon class="sa" points="${poly(95,6)}" ${an('sc-spin 40s linear infinite')}/>
+    <polygon class="sa" points="${poly(70,5)}" ${an('sc-spin 25s linear infinite reverse')}/>
+    <polygon class="sa" points="${poly(44,4)}" ${an('sc-spin 12s linear infinite')}/>
+    <circle class="fa" r="14" ${an('sc-blink 3s ease-in-out infinite')}/>
+  </g></g>
+  <text x="415" y="20" style="fill:var(--a)">知能 40,000</text>
+  <text x="415" y="262" class="sm" ${an('sc-pop 6s infinite','animation-delay:-3s')}>（うなずいておこう）</text>
+  <path class="k" d="M88 240V160h76v80M78 160h96"/>
+  ${man(118,154,'','<path class="fh" d="M-7-28v-8l3.5 4 3.5-6 3.5 6 3.5-4v8z"/>')}
+  <text x="118" y="258" style="fill:var(--h)">知能 100</text>
+  <text x="118" y="104" ${an('sc-pop 6s infinite')}>よし、管理できている</text>
+  <g transform="translate(150,160)"><rect class="fh" x="-8" y="-5" width="16" height="5"/><g ${an('sc-lever 2.4s ease-in-out infinite')}><line class="sh" x1="0" y1="-4" x2="0" y2="-30"/><circle class="fh" cy="-32" r="4"/></g></g>
+  <path class="sh" d="M168 166v70h96"/><rect class="fh" x="264" y="231" width="12" height="10" rx="2"/>
+  <path class="sa" d="M306 236h60"/><rect class="fa" x="296" y="231" width="10" height="10" rx="2"/>
+  <path class="k" d="M281 228l4-6M286 236h5M281 244l4 6" ${an('sc-blink 1.2s infinite')}/>
+  <text x="286" y="270" class="sm">つながっていない</text>
+  </svg>`;
+  if(l===2){
+    const hs=[70,120,95,150,110,135,80], xs=[262,308,352,402,455,508,558];
+    return `<svg class="scene" viewBox="0 0 600 280" role="img" aria-label="門の向こうにAGIの都市が広がり、人間の見学者がガイドに連れられて入っていく。">
+  <line class="k" x1="0" y1="240" x2="600" y2="240"/>
+  <path class="k" d="M18 240v-34l22-18 22 18v34M96 240v-28"/><circle class="k" cx="96" cy="200" r="12"/>
+  ${xs.map((x,i)=>`<g transform="translate(${x},240)"><polygon class="sp" points="-15,0 15,0 ${i%2?9:4},-${hs[i]} -${i%2?9:4},-${hs[i]}" ${an(`sc-grow ${5+i*1.3}s ease-in-out infinite`,`animation-delay:-${i*1.7}s`)}/></g>`).join('')}
+  <path class="lp" d="M262 150Q330 50 402 88T558 130" stroke-dasharray="4 8" ${an('sc-dash 3s linear infinite')}/>
+  <g transform="translate(330,62)"><circle class="lp" r="30" stroke-dasharray="10 6" ${an('sc-spin 20s linear infinite')}/><circle class="sp" r="6"/></g>
+  <g transform="translate(470,48)"><polygon class="lp" points="${poly(22,6)}" ${an('sc-spin 14s linear infinite reverse')}/></g>
+  <g transform="translate(560,70)"><polygon class="sp" points="${poly(13,3)}" ${an('sc-spin 8s linear infinite')}/></g>
+  <path class="k" d="M168 240v-70M206 240v-70M156 172h62M162 183h50"/>
+  <text x="187" y="160" class="sm">門</text>
+  <g ${an('sc-walk 11s ease-in-out infinite alternate','--d:215px')}>
+    <g transform="translate(128,205)"><polygon class="sp" style="opacity:1;animation:sc-bob 1.6s ease-in-out infinite" points="0,-10 8,0 0,10 -8,0"/></g>
+    ${[96,76,56].map((x,i)=>man(x,234,'',`<text y="-34" ${an('sc-pop 5.5s infinite',`animation-delay:-${i*1.4}s`)}>！</text>`)).join('')}
+  </g>
+  ${man(232,234,'',`<rect class="mf" x="5" y="-15" width="7" height="5"/><path class="k" d="M17-18l5-4M18-12h6M17-7l5 4" ${an('sc-blink 2.6s infinite')}/>`)}
+  </svg>`;
+  }
+  return `<svg class="scene" viewBox="0 0 600 280" role="img" aria-label="柵に囲まれた牧場。給餌塔からUBIの硬貨が落ち、人間は歩き回るか寝ている。上空をAGIの見張りが巡回している。">
+  <path d="M0 200Q150 140 300 190T600 170V280H0Z" style="fill:var(--p);opacity:.18"/>
+  <circle class="k" cx="548" cy="44" r="15"/>
+  <g ${an('sc-walk 15s ease-in-out infinite alternate','--d:330px')}><g transform="translate(90,58)">
+    <polygon class="fa" style="opacity:.1" points="0,8 -55,180 55,180"/>
+    <ellipse class="sa" style="fill:var(--bg)" rx="20" ry="9"/><circle class="fa" r="4.5" ${an('sc-blink 2s infinite')}/>
+  </g></g>
+  <path class="k" d="M30 182v52M8 160h74v22H8z"/><text x="45" y="176">人間牧場</text>
+  <path class="sa" d="M512 240V120h44v120M500 120h68M512 150h-14v8"/><text x="534" y="142" style="fill:var(--a)">UBI</text>
+  ${[0,1,2].map(i=>`<circle class="gold" cx="${494+i*3}" cy="162" r="4.5" ${an('sc-fall 2.4s linear infinite',`--d:66px;animation-delay:-${i*.8}s`)}/>`).join('')}
+  <path class="k" d="M474 228h44l-5 12h-34z"/>
+  ${man(462,234)}
+  ${man(130,232,an('sc-walk 17s ease-in-out infinite alternate','--d:130px'))}
+  ${man(360,224,an('sc-walk 23s ease-in-out infinite alternate','--d:-110px'))}
+  ${man(390,238,an('sc-walk 12s ease-in-out infinite alternate','--d:50px'))}
+  ${man(196,238,'','',90)}<text x="222" y="216" class="sm" ${an('sc-pop 4s infinite')}>zzz</text>
+  ${man(96,240,'','',90)}<text x="122" y="218" class="sm" ${an('sc-pop 4s infinite','animation-delay:-2s')}>zzz</text>
+  <path class="k" d="M0 256h600M0 266h600${Array.from({length:12},(_,i)=>`M${20+i*51} 248v26`).join('')}"/>
+  </svg>`;
+}
+
 /* ============ 進行 ============ */
 function advance(){
   if(S.busy)return;
@@ -499,7 +590,7 @@ function ending(){
   let seen=[]; try{seen=JSON.parse(localStorage.getItem('agi-sugoroku-endings')||'[]'); if(!seen.includes(key))seen.push(key); localStorage.setItem('agi-sugoroku-endings',JSON.stringify(seen));}catch(e){seen=[key];}
   S.end=l; S.row=23;
   render(false);status();hist();
-  card(`<div class="end"><div class="meta"><span class="tag">2046年以降</span><span class="tag lane bg${K[l]}">あがり</span></div>
+  card(`<div class="end">${scene(l)}<div class="meta"><span class="tag">2046年以降</span><span class="tag lane bg${K[l]}">あがり</span></div>
   ${S.turn?`<p class="note">${S.turn}</p>`:''}
   <h2 class="t${K[l]}">${E[0]}</h2><p><b>${E[1]}</b></p><p class="result">${E[2]}</p>
   <p class="note">盤面の色は、そのとき歴史がどの流れの中にあったかを示す（<b class="tH">統治</b>・<b class="tP">並列</b>・<b class="tA">AGI</b>）。結末は三つの行き先 × 二つの形で6通り。これまでに見たのは ${seen.length} / 6。</p>
